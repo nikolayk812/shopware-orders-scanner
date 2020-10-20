@@ -1,0 +1,25 @@
+{{ $orders := .Orders }}
+{{ $baseURL := .BaseURL }}
+<p>
+    Scanned {{ .Scanned }} and detected {{ .Detected }} suspicious orders.
+</p>
+<table border="1">
+    {{ range $order := $orders }}
+    <tr>
+        <td>
+            <a href="{{ $baseURL }}/admin#/sw/order/detail/{{ $order.OrderID }}"
+               target="_blank">{{ $order.OrderNumber }}</a>
+        </td>
+        <td>
+            <ul>
+                {{ range $ruleName, $error := $order.Errors }}
+                <li><b>{{ $ruleName }}</b>: {{ $error }}</li>
+                {{ end }}
+            </ul>
+        </td>
+        <td>
+            {{$order.TrackingCode}}
+        </td>
+    </tr>
+    {{ end }}
+</table>
