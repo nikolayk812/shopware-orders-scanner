@@ -45,11 +45,18 @@ func main() {
 
 	midNight := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	from := midNight.AddDate(0, 0, -1)
-	to := time.Now()
+	to := midNight.Add(-time.Nanosecond)
 
 	engine := buildEngine()
 	service := orders.NewService(orderCli, engine)
-	badOrders, scanned, err := service.ScanOrders(context.Background(), from, to)
+	badOrders, scanned, err := service.ScanOrders(context.Background(), orders.FilterRequest{
+		From:                      from,
+		To:                        to,
+		IncludeCreated:            true,
+		IncludeUpdated:            true,
+		IncludeDeliveryUpdated:    true,
+		IncludeTransactionUpdated: true,
+	})
 	if err != nil {
 		log.Fatalf("failed to scan yesterday orders : %v", err)
 	}

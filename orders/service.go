@@ -22,87 +22,81 @@ func NewService(orderCli shopware.OrderService, engine rules.Engine) Service {
 	}
 }
 
+type FilterRequest struct {
+	From, To                  time.Time
+	IncludeCreated            bool
+	IncludeUpdated            bool
+	IncludeDeliveryUpdated    bool
+	IncludeTransactionUpdated bool
+}
+
 // returns only bad orders
-func (s Service) ScanOrders(ctx context.Context, from, to time.Time) ([]domains.OrderResult, int, error) {
-	processed := map[string]bool{}
+func (s Service) ScanOrders(ctx context.Context, req FilterRequest) ([]domains.OrderResult, int, error) {
 	var result []domains.OrderResult
+	processed := map[string]bool{}
 
-	var orders []shopware.Order
-	page := 1
-	for {
-		pageOrders, err := s.orderCli.SearchOrdersByTimeRange(ctx, "updatedAt", from, to, page)
+	if req.IncludeUpdated {
+		orders, err := s.getAllOrders(ctx, s.orderCli.SearchOrdersByTimeRange, "updatedAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get orders by updatedAt : %w", err)
+			return nil, 0, fmt.Errorf("SearchOrdersByTimeRange(updatedAt) : %w", err)
 		}
-		orders = append(orders, pageOrders...)
-		page++
-
-		if len(pageOrders) < shopware.MaxSearchLimit {
-			break
-		}
+		badOrders := s.processOrders(orders, processed)
+		result = append(result, badOrders...)
 	}
-	zap.S().Infof("got %d orders by updatedAt", len(orders))
-	badOrders := s.processOrders(orders, processed)
-	result = append(result, badOrders...)
 
-	page = 1
-	orders = nil
-	for {
-		pageOrders, err := s.orderCli.SearchOrdersByTimeRange(ctx, "createdAt", from, to, page)
+	if req.IncludeCreated {
+		orders, err := s.getAllOrders(ctx, s.orderCli.SearchOrdersByTimeRange, "createdAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get orders by createdAt : %w", err)
+			return nil, 0, fmt.Errorf("SearchOrdersByTimeRange(createdAt) : %w", err)
 		}
-		orders = append(orders, pageOrders...)
-		page++
-
-		if len(pageOrders) < shopware.MaxSearchLimit {
-			break
-		}
+		badOrders := s.processOrders(orders, processed)
+		result = append(result, badOrders...)
 	}
-	zap.S().Infof("got %d orders by createdAt", len(orders))
-	badOrders = s.processOrders(orders, processed)
-	result = append(result, badOrders...)
 
-	page = 1
-	orders = nil
-	for {
-		pageOrders, err := s.searchOrdersByDeliveries(ctx, from, to, page)
+	if req.IncludeDeliveryUpdated {
+		orders, err := s.getAllOrders(ctx, s.searchOrdersByDeliveries, "updatedAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get orders by deliveries : %w", err)
+			return nil, 0, fmt.Errorf("searchOrdersByDeliveries : %w", err)
 		}
-		orders = append(orders, pageOrders...)
-		page++
-
-		if len(pageOrders) < shopware.MaxSearchLimit {
-			break
-		}
+		badOrders := s.processOrders(orders, processed)
+		result = append(result, badOrders...)
 	}
-	zap.S().Infof("got %d orders by deliveries", len(orders))
-	badOrders = s.processOrders(orders, processed)
-	result = append(result, badOrders...)
 
-	page = 1
-	orders = nil
-	for {
-		pageOrders, err := s.searchOrdersByTransactions(ctx, from, to, page)
+	if req.IncludeTransactionUpdated {
+		orders, err := s.getAllOrders(ctx, s.searchOrdersByTransactions, "updatedAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get orders by transactions : %w", err)
+			return nil, 0, fmt.Errorf("searchOrdersByTransactions : %w", err)
 		}
-		orders = append(orders, pageOrders...)
-		page++
-
-		if len(pageOrders) < shopware.MaxSearchLimit {
-			break
-		}
+		badOrders := s.processOrders(orders, processed)
+		result = append(result, badOrders...)
 	}
-	zap.S().Infof("got %d orders by transactions", len(orders))
-	badOrders = s.processOrders(orders, processed)
-	result = append(result, badOrders...)
 
 	return result, len(processed), nil
 }
 
-func (s Service) searchOrdersByDeliveries(ctx context.Context, from, to time.Time, page int) ([]shopware.Order, error) {
+func (s Service) getAllOrders(ctx context.Context,
+	searchFunc func(context.Context, string, time.Time, time.Time, int) ([]shopware.Order, error),
+	field string, from, to time.Time) ([]shopware.Order, error) {
+
+	var result []shopware.Order
+	page := 1
+	for {
+		pageOrders, err := searchFunc(ctx, field, from, to, page)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get orders : %w", err)
+		}
+		result = append(result, pageOrders...)
+		page++
+
+		if len(pageOrders) < shopware.MaxSearchLimit {
+			break
+		}
+	}
+	zap.S().Infof("got %d orders by %s", len(result), field)
+	return result, nil
+}
+
+func (s Service) searchOrdersByDeliveries(ctx context.Context, _ string, from, to time.Time, page int) ([]shopware.Order, error) {
 	deliveries, err := s.orderCli.SearchDeliveriesByTimeRange(ctx, "updatedAt", from, to, page)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deliveries by updatedAt : %w", err)
@@ -119,7 +113,7 @@ func (s Service) searchOrdersByDeliveries(ctx context.Context, from, to time.Tim
 	return s.orderCli.SearchOrdersByIDs(ctx, orderIDs)
 }
 
-func (s Service) searchOrdersByTransactions(ctx context.Context, from, to time.Time, page int) ([]shopware.Order, error) {
+func (s Service) searchOrdersByTransactions(ctx context.Context, _ string, from, to time.Time, page int) ([]shopware.Order, error) {
 	txs, err := s.orderCli.SearchTransactionsByTimeRange(ctx, "updatedAt", from, to, page)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transactions by updatedAt : %w", err)
