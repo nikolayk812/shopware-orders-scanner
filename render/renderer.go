@@ -3,7 +3,7 @@ package render
 import (
 	"bytes"
 	"fmt"
-	"github.com/nikolayk812/shopware-orders-scanner/domains"
+	"github.com/nikolayk812/shopware-orders-scanner/domain"
 	"html/template"
 )
 
@@ -19,10 +19,10 @@ func NewRenderer(templatePath, shopwareBaseURL string) Renderer {
 	}
 }
 
-func (r Renderer) RenderHTML(orders []domains.OrderResult, scanned int) ([]byte, error) {
+func (r Renderer) RenderHTML(orders []domain.OrderResult, scanned int) ([]byte, error) {
 	params := struct {
 		BaseURL  string
-		Orders   []domains.OrderResult
+		Orders   []domain.OrderResult
 		Scanned  int
 		Detected int
 	}{

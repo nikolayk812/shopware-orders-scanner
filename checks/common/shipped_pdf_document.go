@@ -3,14 +3,14 @@ package common
 import (
 	"fmt"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
-	"github.com/nikolayk812/shopware-orders-scanner/domains"
+	"github.com/nikolayk812/shopware-orders-scanner/domain"
 )
 
 type ShippedPdfDocument struct{}
 
 func (_ ShippedPdfDocument) Apply(order shopware.Order) (bool, error) {
 	// pre-condition
-	d, ok := domains.FirstDelivery(order)
+	d, ok := domain.FirstDelivery(order)
 	if !ok {
 		return false, nil
 	}
@@ -19,7 +19,7 @@ func (_ ShippedPdfDocument) Apply(order shopware.Order) (bool, error) {
 	}
 
 	// check
-	doc, ok := domains.FirstDocument(order)
+	doc, ok := domain.FirstDocument(order)
 	if !ok {
 		return false, fmt.Errorf("no document")
 	}

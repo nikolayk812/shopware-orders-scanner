@@ -1,4 +1,4 @@
-package domains
+package domain
 
 type OrderResult struct {
 	OrderID      string

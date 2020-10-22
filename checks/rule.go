@@ -1,8 +1,8 @@
-package rules
+package checks
 
 import "github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
 
-type Rule interface {
+type Check interface {
 	//(true, nil) -> okay
 	//(false, nil) -> skipped, i.e. not applicable
 	//(false, err) -> failure

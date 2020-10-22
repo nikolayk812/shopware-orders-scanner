@@ -9,8 +9,8 @@ import (
 const timeFormat = "2006-01-02 15:04:05"
 
 type OrderService interface {
-	SearchOrdersByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]Order, error)
-	SearchOrdersByIDs(ctx context.Context, IDs []string) ([]Order, error)
+	SearchByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]Order, error)
+	SearchByIDs(ctx context.Context, IDs []string) ([]Order, error)
 	SearchDeliveriesByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]OrderDelivery, error)
 	SearchTransactionsByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]OrderTransaction, error)
 }
@@ -27,7 +27,7 @@ func NewOrderService(client *resty.Client, provider TokenProvider) OrderService 
 	}
 }
 
-func (s *orderService) SearchOrdersByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]Order, error) {
+func (s *orderService) SearchByTimeRange(ctx context.Context, field string, gte, lte time.Time, page int) ([]Order, error) {
 	path := "/api/v3/search/order"
 
 	type request struct {
@@ -70,7 +70,7 @@ func (s *orderService) SearchOrdersByTimeRange(ctx context.Context, field string
 	return result.Data, nil
 }
 
-func (s *orderService) SearchOrdersByIDs(ctx context.Context, IDs []string) ([]Order, error) {
+func (s *orderService) SearchByIDs(ctx context.Context, IDs []string) ([]Order, error) {
 	path := "/api/v3/search/order"
 
 	type request struct {

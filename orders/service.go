@@ -3,19 +3,19 @@ package orders
 import (
 	"context"
 	"fmt"
+	"github.com/nikolayk812/shopware-orders-scanner/checks"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
-	"github.com/nikolayk812/shopware-orders-scanner/domains"
-	"github.com/nikolayk812/shopware-orders-scanner/rules"
+	"github.com/nikolayk812/shopware-orders-scanner/domain"
 	"go.uber.org/zap"
 	"time"
 )
 
 type Service struct {
 	orderCli shopware.OrderService
-	engine   rules.Engine
+	engine   checks.Engine
 }
 
-func NewService(orderCli shopware.OrderService, engine rules.Engine) Service {
+func NewService(orderCli shopware.OrderService, engine checks.Engine) Service {
 	return Service{
 		orderCli: orderCli,
 		engine:   engine,
@@ -31,23 +31,23 @@ type FilterRequest struct {
 }
 
 // returns only bad orders
-func (s Service) ScanOrders(ctx context.Context, req FilterRequest) ([]domains.OrderResult, int, error) {
-	var result []domains.OrderResult
+func (s Service) ScanOrders(ctx context.Context, req FilterRequest) ([]domain.OrderResult, int, error) {
+	var result []domain.OrderResult
 	processed := map[string]bool{}
 
 	if req.IncludeUpdated {
-		orders, err := s.getAllOrders(ctx, s.orderCli.SearchOrdersByTimeRange, "updatedAt", req.From, req.To)
+		orders, err := s.getAllOrders(ctx, s.orderCli.SearchByTimeRange, "updatedAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("SearchOrdersByTimeRange(updatedAt) : %w", err)
+			return nil, 0, fmt.Errorf("SearchByTimeRange(updatedAt) : %w", err)
 		}
 		badOrders := s.processOrders(orders, processed)
 		result = append(result, badOrders...)
 	}
 
 	if req.IncludeCreated {
-		orders, err := s.getAllOrders(ctx, s.orderCli.SearchOrdersByTimeRange, "createdAt", req.From, req.To)
+		orders, err := s.getAllOrders(ctx, s.orderCli.SearchByTimeRange, "createdAt", req.From, req.To)
 		if err != nil {
-			return nil, 0, fmt.Errorf("SearchOrdersByTimeRange(createdAt) : %w", err)
+			return nil, 0, fmt.Errorf("SearchByTimeRange(createdAt) : %w", err)
 		}
 		badOrders := s.processOrders(orders, processed)
 		result = append(result, badOrders...)
@@ -110,7 +110,7 @@ func (s Service) searchOrdersByDeliveries(ctx context.Context, _ string, from, t
 	for _, d := range deliveries {
 		orderIDs = append(orderIDs, d.OrderID)
 	}
-	return s.orderCli.SearchOrdersByIDs(ctx, orderIDs)
+	return s.orderCli.SearchByIDs(ctx, orderIDs)
 }
 
 func (s Service) searchOrdersByTransactions(ctx context.Context, _ string, from, to time.Time, page int) ([]shopware.Order, error) {
@@ -127,12 +127,12 @@ func (s Service) searchOrdersByTransactions(ctx context.Context, _ string, from,
 	for _, d := range txs {
 		orderIDs = append(orderIDs, d.OrderID)
 	}
-	return s.orderCli.SearchOrdersByIDs(ctx, orderIDs)
+	return s.orderCli.SearchByIDs(ctx, orderIDs)
 }
 
 // returns only bad orders
-func (s Service) processOrders(orders []shopware.Order, processed map[string]bool) []domains.OrderResult {
-	var badOrders []domains.OrderResult
+func (s Service) processOrders(orders []shopware.Order, processed map[string]bool) []domain.OrderResult {
+	var badOrders []domain.OrderResult
 	for _, order := range orders {
 		if processed[order.ID] {
 			continue
@@ -141,11 +141,11 @@ func (s Service) processOrders(orders []shopware.Order, processed map[string]boo
 
 		errors := s.engine.ProcessOrder(order)
 		if len(errors) > 0 {
-			badOrders = append(badOrders, domains.OrderResult{
+			badOrders = append(badOrders, domain.OrderResult{
 				OrderID:      order.ID,
 				OrderNumber:  order.Number,
 				ChannelID:    order.SalesChannelID,
-				TrackingCode: domains.TrackingCode(order),
+				TrackingCode: domain.TrackingCode(order),
 				Errors:       errors,
 			})
 		}

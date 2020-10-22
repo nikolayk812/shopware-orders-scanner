@@ -3,20 +3,20 @@ package common
 import (
 	"fmt"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
-	"github.com/nikolayk812/shopware-orders-scanner/domains"
+	"github.com/nikolayk812/shopware-orders-scanner/domain"
 )
 
 type ReturnedRefundedState struct{}
 
 func (_ ReturnedRefundedState) Apply(order shopware.Order) (bool, error) {
 	// pre-conditions
-	d, ok := domains.FirstDelivery(order)
+	d, ok := domain.FirstDelivery(order)
 	if !ok {
 		return false, nil
 	}
 
 	// check
-	tx, ok := domains.LatestTransaction(order)
+	tx, ok := domain.LatestTransaction(order)
 	if !ok {
 		return false, fmt.Errorf("no transactions")
 	}

@@ -1,4 +1,4 @@
-package rules
+package checks
 
 import (
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
@@ -6,10 +6,10 @@ import (
 )
 
 type Engine struct {
-	rules map[string]Rule
+	rules map[string]Check
 }
 
-func NewEngine(rules map[string]Rule) Engine {
+func NewEngine(rules map[string]Check) Engine {
 	return Engine{rules: rules}
 }
 

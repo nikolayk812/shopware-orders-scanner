@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 )
@@ -48,8 +49,7 @@ func (c *credTokenProvider) scheduleUpdateToken() {
 	for {
 		tokenResp, err := c.updateToken(context.Background())
 		if err != nil {
-			//TODO:
-			//logging.Errorf(tracing.FlowID(ctx), "Failed to get token : %v", err)
+			zap.S().Errorf("updateToken : %v", err)
 			time.Sleep(time.Second)
 			continue
 		}

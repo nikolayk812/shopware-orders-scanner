@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/nikolayk812/shopware-orders-scanner/checks"
+	"github.com/nikolayk812/shopware-orders-scanner/checks/common"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
 	"github.com/nikolayk812/shopware-orders-scanner/config"
 	"github.com/nikolayk812/shopware-orders-scanner/mail"
 	"github.com/nikolayk812/shopware-orders-scanner/orders"
 	"github.com/nikolayk812/shopware-orders-scanner/render"
-	"github.com/nikolayk812/shopware-orders-scanner/rules"
-	"github.com/nikolayk812/shopware-orders-scanner/rules/common"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
@@ -77,15 +77,15 @@ func main() {
 	zap.S().Infof("stopping Shopware orders scanner")
 }
 
-func buildEngine() rules.Engine {
-	rr := map[string]rules.Rule{
+func buildEngine() checks.Engine {
+	rr := map[string]checks.Check{
 		"TRACKING_CODE":       common.ShippedTrackingCode{},
 		"PDF_DOCUMENT":        common.ShippedPdfDocument{},
 		"RETURN_REFUND_STATE": common.ReturnedRefundedState{},
 		"DONE_SHIPPED":        common.DoneDeliveryNotOpen{},
 	}
 
-	return rules.NewEngine(rr)
+	return checks.NewEngine(rr)
 }
 
 func buildShopwareClients(conf config.Shopware) (shopware.OrderService, shopware.ProductService, error) {

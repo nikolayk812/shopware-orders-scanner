@@ -1,4 +1,4 @@
-package domains
+package domain
 
 import (
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"

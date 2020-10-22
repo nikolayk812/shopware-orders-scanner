@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
-	"github.com/nikolayk812/shopware-orders-scanner/domains"
+	"github.com/nikolayk812/shopware-orders-scanner/domain"
 )
 
 type DoneDeliveryNotOpen struct{}
@@ -15,7 +15,7 @@ func (_ DoneDeliveryNotOpen) Apply(order shopware.Order) (bool, error) {
 	}
 
 	// check
-	d, ok := domains.FirstDelivery(order)
+	d, ok := domain.FirstDelivery(order)
 	if !ok {
 		return false, fmt.Errorf("no deliveries")
 	}
