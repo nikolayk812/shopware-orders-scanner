@@ -5,5 +5,6 @@ type OrderResult struct {
 	OrderNumber  string
 	ChannelID    string
 	TrackingCode string
+	CreatedDate  string
 	Errors       map[string]error
 }

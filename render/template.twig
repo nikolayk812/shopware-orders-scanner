@@ -10,6 +10,7 @@
             <a href="{{ $baseURL }}/admin#/sw/order/detail/{{ $order.OrderID }}"
                target="_blank">{{ $order.OrderNumber }}</a>
         </td>
+        <td>{{ $order.CreatedDate }}</td>
         <td>
             <ul>
                 {{ range $ruleName, $error := $order.Errors }}

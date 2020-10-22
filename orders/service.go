@@ -7,6 +7,7 @@ import (
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
 	"github.com/nikolayk812/shopware-orders-scanner/domain"
 	"go.uber.org/zap"
+	"sort"
 	"time"
 )
 
@@ -71,6 +72,7 @@ func (s Service) ScanOrders(ctx context.Context, req FilterRequest) ([]domain.Or
 		result = append(result, badOrders...)
 	}
 
+	sortResult(result)
 	return result, len(processed), nil
 }
 
@@ -146,9 +148,40 @@ func (s Service) processOrders(orders []shopware.Order, processed map[string]boo
 				OrderNumber:  order.Number,
 				ChannelID:    order.SalesChannelID,
 				TrackingCode: domain.TrackingCode(order),
+				CreatedDate:  trySubString(order.CreatedAt, 10),
 				Errors:       errors,
 			})
 		}
 	}
 	return badOrders
+}
+
+func sortResult(r []domain.OrderResult) {
+	sort.SliceStable(r, func(i, j int) bool {
+		if len(r[i].Errors) != len(r[j].Errors) {
+			return len(r[i].Errors) < len(r[j].Errors)
+		}
+
+		for iKey := range r[i].Errors {
+			_, ok := r[j].Errors[iKey]
+			if !ok {
+				for jKey := range r[j].Errors {
+					return iKey < jKey
+				}
+			}
+		}
+
+		if r[i].CreatedDate != r[j].CreatedDate {
+			return r[i].CreatedDate < r[j].CreatedDate
+		}
+
+		return r[i].OrderNumber < r[j].OrderNumber
+	})
+}
+
+func trySubString(s string, l int) string {
+	if len(s) <= l {
+		return s
+	}
+	return s[:l]
 }
