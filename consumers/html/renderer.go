@@ -1,8 +1,9 @@
-package render
+package html
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/nikolayk812/shopware-orders-scanner/consumers"
 	"github.com/nikolayk812/shopware-orders-scanner/domain"
 	"html/template"
 )
@@ -19,7 +20,7 @@ func NewRenderer(templatePath, shopwareBaseURL string) Renderer {
 	}
 }
 
-func (r Renderer) RenderHTML(orders []domain.OrderResult, scanned int) ([]byte, error) {
+func (r Renderer) Consume(orders []domain.OrderResult, scanned int) (consumers.Result, error) {
 	params := struct {
 		BaseURL  string
 		Orders   []domain.OrderResult
@@ -34,13 +35,13 @@ func (r Renderer) RenderHTML(orders []domain.OrderResult, scanned int) ([]byte, 
 
 	t, err := template.ParseFiles(r.templatePath)
 	if err != nil {
-		return nil, fmt.Errorf("template.ParseFiles [%s] : %w", r.templatePath, err)
+		return consumers.Result{}, fmt.Errorf("template.ParseFiles [%s] : %w", r.templatePath, err)
 	}
 
 	var body bytes.Buffer
 	if err := t.Execute(&body, params); err != nil {
-		return nil, fmt.Errorf("t.Execute : %w", err)
+		return consumers.Result{}, fmt.Errorf("t.Execute : %w", err)
 	}
 
-	return body.Bytes(), nil
+	return consumers.Result{Bytes: body.Bytes()}, nil
 }

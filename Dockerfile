@@ -5,7 +5,7 @@ USER app
 
 WORKDIR /app
 
-ADD render/template.twig render/
+ADD consumers/html/template.twig consumers/html/
 
 # add binary
 COPY build/linux/shopware-orders-scanner/ .

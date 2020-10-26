@@ -8,9 +8,8 @@ import (
 	"github.com/nikolayk812/shopware-orders-scanner/checks/common"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
 	"github.com/nikolayk812/shopware-orders-scanner/config"
-	"github.com/nikolayk812/shopware-orders-scanner/mail"
+	"github.com/nikolayk812/shopware-orders-scanner/consumers/mail"
 	"github.com/nikolayk812/shopware-orders-scanner/orders"
-	"github.com/nikolayk812/shopware-orders-scanner/render"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"log"
@@ -62,16 +61,10 @@ func main() {
 	}
 	zap.S().Infof("detected %d suspicious orders", len(badOrders))
 
-	renderer := render.NewRenderer("./render/template.twig", cfg.Shopware.BaseURL)
-	bytes, err := renderer.RenderHTML(badOrders, scanned)
+	sender := mail.NewSender(cfg.Shopware, cfg.SendGrid)
+	_, err = sender.Consume(badOrders, scanned)
 	if err != nil {
-		log.Fatalf("renderer.RenderHTML: %v", err)
-	}
-
-	sender := mail.NewSender(cfg.SendGrid)
-	err = sender.SendMail(string(bytes))
-	if err != nil {
-		log.Fatalf("sender.SendMail: %v", err)
+		log.Fatalf("sender.Consume : %v", err)
 	}
 
 	zap.S().Infof("stopping Shopware orders scanner")
