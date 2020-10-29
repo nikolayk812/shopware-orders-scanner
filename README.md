@@ -31,3 +31,24 @@ Then it examines an each order by a set of checks. Those orders which fail to pa
 Later an HTML report for the inconsistent orders is generated. Then it is sent out as an email via <a href=https://sendgrid.com/>Sendgrid</a> API.
 
 ![report](report.png)
+
+Report format could be customized and prettified. 
+<br>
+<br>
+In the example above first column represents an order number and has link to this order in Shopware Admin UI. Second column represents order's creation date. Third column indicate all checks which order has failed to pass. Fourth column has a tracking code.
+
+## Running locally
+
+To run this tool locally several environment variables have to be provided in [local.env](local.env) file:
+- SHOPWARE_BASE_URL
+- SHOPWARE_CLIENT_ID
+- SHOPWARE_CLIENT_SECRET
+
+For the latter two it is recommended to create a separate read-only <a href=https://docs.shopware.com/en/shopware-6-en/settings/system/integrationen>Shopware integration</a>.
+
+By default sending of a report as an email is disabled and requires separate configuration.
+
+- setting *SENDGRID_ENABLED* to true
+- providing meaningful values for all variables with *SENDGRID* prefix
+
+When not using email reports one can get a list of inconsistent orders from the tool standard log.
