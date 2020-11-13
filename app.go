@@ -36,7 +36,7 @@ func main() {
 	defer zap.S().Infof("stopping Shopware orders scanner")
 
 	var cfg mainConfig
-	if err := config.Parse("local-prod.env", &cfg); err != nil {
+	if err := config.Parse("local.env", &cfg); err != nil {
 		log.Fatalf("config.Parse: %v", err)
 	}
 
