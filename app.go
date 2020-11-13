@@ -8,10 +8,12 @@ import (
 	"github.com/nikolayk812/shopware-orders-scanner/checks/common"
 	"github.com/nikolayk812/shopware-orders-scanner/clients/shopware"
 	"github.com/nikolayk812/shopware-orders-scanner/config"
+	"github.com/nikolayk812/shopware-orders-scanner/consumers/html"
 	"github.com/nikolayk812/shopware-orders-scanner/consumers/mail"
 	"github.com/nikolayk812/shopware-orders-scanner/orders"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io/ioutil"
 	"log"
 	"time"
 )
@@ -31,9 +33,10 @@ func main() {
 
 	now := time.Now()
 	zap.S().Info("starting Shopware orders scanner")
+	defer zap.S().Infof("stopping Shopware orders scanner")
 
 	var cfg mainConfig
-	if err := config.Parse("local.env", &cfg); err != nil {
+	if err := config.Parse("local-prod.env", &cfg); err != nil {
 		log.Fatalf("config.Parse: %v", err)
 	}
 
@@ -61,13 +64,24 @@ func main() {
 	}
 	zap.S().Infof("detected %d suspicious orders", len(badOrders))
 
-	sender := mail.NewSender(cfg.Shopware, cfg.SendGrid)
-	_, err = sender.Consume(badOrders, scanned)
-	if err != nil {
-		log.Fatalf("sender.Consume : %v", err)
+	if cfg.SendGrid.Enabled {
+		sender := mail.NewSender(cfg.Shopware, cfg.SendGrid)
+		_, err = sender.Consume(badOrders, scanned)
+		if err != nil {
+			log.Fatalf("sender.Consume : %v", err)
+		}
+		return
 	}
 
-	zap.S().Infof("stopping Shopware orders scanner")
+	htmlRenderer := html.NewRenderer("./consumers/html/template.twig", cfg.Shopware.BaseURL)
+	document, err := htmlRenderer.Consume(badOrders, scanned)
+	if err != nil {
+		log.Fatalf("htmlRenderer.Consume : %v", err)
+	}
+	fileName := "./reports/" + time.Now().Format("report_01-02-2006_15:04") + ".html"
+	if err := ioutil.WriteFile(fileName, document.Bytes, 0644); err != nil {
+		log.Fatalf("WriteFile : %v", err)
+	}
 }
 
 func buildEngine() checks.Engine {

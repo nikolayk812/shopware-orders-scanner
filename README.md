@@ -51,4 +51,4 @@ By default sending of a report as an email is disabled and requires separate con
 - setting *SENDGRID_ENABLED* to true
 - providing meaningful values for all variables with *SENDGRID* prefix
 
-When not using email reports one can get a list of inconsistent orders from the tool standard log.
+If sending emails feature is disabled then HTML reports are generated in [reports](reports) directory.
